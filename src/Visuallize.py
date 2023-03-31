@@ -4,6 +4,7 @@ from ovito.vis import Viewport
 import os
 import glob
 
+
 # 私有函数, 用于检查输入变量size是否符合规范
 def __check_size(size):
   '''
@@ -108,7 +109,7 @@ def export_png(fileName, outputName, renderPara,
                size=(800, 600), isCell=False, frame=0,
                backcolor=(1.0, 1.0, 1.0), rend='TR',
                cameraDir=(2, 1, -1), cameraPos=[0, 0, 0],
-               modifiers=None, Fov=100
+               modifiers=None, Fov=100, isZoom=True, isOrtho=True
                ):
   '''
   此函数用于将文件导入到OVITO中并导出相关图片处理, 但是具有一定限制, 比如OVITO出图
@@ -131,6 +132,10 @@ def export_png(fileName, outputName, renderPara,
   modifiers : 元组类型, 内部可以包含N个OVITO提供的modifier, 用户可以在主程序中通过从
   ovito中的modifier模块导入需要的分析命令, 输入必要的参数, 然后将所有的模板传入这个函数中,
   以获得更好的渲染效果, 同时也需要注意各个modifier的顺序先后问题.
+  isZoom    : 逻辑类型, 是否使用自动缩放, 如果使用自动缩放, 那么Ovito会保证在当前的摄像机的
+  位置和方向的视角中, 一定可以把整个模型都完全拍进图片.默认为True.
+  isOrtho   : 视角类型是否采用正交视角, OVITO提供了2中视觉效果, Ortho的意思就是没有近大远小的效果,
+  perspective的意思就是打开近大远小的效果. 默认为TRUE, 即关闭近大远小的效果.
   '''
   
   # 检查输入参数是否符合规范
@@ -168,11 +173,27 @@ def export_png(fileName, outputName, renderPara,
 
   # 选择摄像机的角度和位置, 这里可以预先在OVITO里面调整好之后再将数据输入到代码中
   if (cameraPos == [0,0,0]):    # 如果用户没有手动定义摄像机位置, 就选择默认的位置
-    vp = Viewport(type=Viewport.Type.Ortho, camera_dir=cameraDir, 
-                camera_pos=[lx/2, ly/2, lz/2], fov=Fov)
+    if isZoom:                  # 如果isZoom为真, 那么不设置FOV, 直接调用zoom_all()方法
+      vp = Viewport(type=Viewport.Type.Ortho if isOrtho else Viewport.Type.Perspective, 
+                    camera_dir=cameraDir, 
+                    camera_pos=[lx/2, ly/2, lz/2])
+      vp.zoom_all()
+      #print("Zoom_all is called.")
+    else:
+      vp = Viewport(type=Viewport.Type.Ortho if isOrtho else Viewport.Type.Perspective, 
+                    camera_dir=cameraDir, 
+                  camera_pos=[lx/2, ly/2, lz/2], fov=Fov)
   else:
-    vp = Viewport(type=Viewport.Type.Ortho, camera_dir=cameraDir, 
-                camera_pos=cameraPos, fov=Fov)
+    if isZoom:
+      vp = Viewport(type=Viewport.Type.Ortho if isOrtho else Viewport.Type.Perspective, 
+                    camera_dir=cameraDir, 
+                    camera_pos=cameraPos)
+      vp.zoom_all()
+      #print("Zoom_all is called.")
+    else:       # 如果isZoom为真, 那么不设置FOV, 直接调用zoom_all()方法
+      vp = Viewport(type=Viewport.Type.Ortho if isOrtho else Viewport.Type.Perspective, 
+                    camera_dir=cameraDir, 
+                    camera_pos=cameraPos, fov=Fov)
   
   # 正式开始渲染
   if renders == 2:
@@ -237,3 +258,4 @@ and the direction of camera is {cameraDir}")
     # 渲染完成之后清除所有的场景, 这个步骤是必要的, 否则如果多次调用这个函数,
     # 那么上一次函数的相关设置就可能会影响下一次图片的渲染
     pipeline.remove_from_scene()
+
