@@ -5,6 +5,7 @@ from ovito.modifiers import DeleteSelectedModifier as DSM
 from ovito.modifiers import ExpressionSelectionModifier as ESM
 from ovito.modifiers import PolyhedralTemplateMatchingModifier as PTM
 from ovito.modifiers import DislocationAnalysisModifier as DXA
+from ovito.modifiers import IdentifyFCCPlanarFaultsModifier as IPFM
 from ovito.vis import SurfaceMeshVis as SMV
 import numpy as np
 
@@ -23,6 +24,13 @@ template3 = (DXA(input_crystal_structure=DXA.Lattice.FCC,
                                 title='Defect mesh', surface_transparency=1)), 
             ESM(expression='Position.Z < 80'),
             DSM())
+
+# 想要使用IPFM, 必须先调用PTM算法, 而且必须把orientation和interatomic_distance都计算输出
+# IdentifyFCCPlanarFaultsModifier要求OVITO模块版本必须大于3.8.0, 这个模块可以让OVITO识别和
+# 可视化晶体中ISF和TB的存在.
+template4 = (PTM(output_interatomic_distance=True,
+                 output_orientation=True), IPFM()
+            )
 
 # 我们需要任何OVITO中的modifier, 去如下网址找到对应的名字和用法:
 # https://www.ovito.org/docs/current/python/modules/ovito_modifiers.html#ovito.modifiers.CommonNeighborAnalysisModifier
